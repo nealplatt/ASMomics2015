@@ -42,6 +42,42 @@ chmod a-w *.fq
 ls -lh *
 
 #You should notice that your file permission have changed, the "w" is gone, and
-#  file sizes make more sense.
+#  file sizes make more sense (G = gigabytes, M = megabytes, K = kilobytes).
 
+#Now lets look at the actual data...
+head Index_Bat_9_1.fq
+
+# description of fastq slides here !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+#We know our files are large, and they are in the FastQ format, but how big are
+#  they
+wc *.fq
+#This gives us the TOTAL number of lines, words, characters, and the filename.
+#  but we know that the .FQ format has 4 lines per entry.  Lets get a better idea
+
+wc -l *.fq | awk '{print $1/4"\t"$2}'                                           <- first use of the pipe , explain
+
+#or by millions
+wc -l *.fq | awk '{print $1/4000000"\t"$2}' 
+
+#Also, notice that the number of reads are identical between libraries
+#  R1 vs. R2.  This expected from paired end data.
+
+################################################################################
+################################################################################
+##                                                                            ##
+##         Quality control via FastQC and FastX                               ##
+##                                                                            ##
+################################################################################
+################################################################################
+#
+#Here we will use a series of programs to investigate the quality of the raw 
+#  reads, filter dirty data, then see how that changed the overall quality of
+#  the remaining (filtered) reads. To do this we will use two different packages
+#  FastX_toolkit and FastQC.
+
+# *** REMEMBER - we will be manipulating and creating new data.  This will be done
+#       in the results directory ***
+
+cd $RESULTS_DIR
 
