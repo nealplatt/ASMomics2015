@@ -141,7 +141,7 @@ echo "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTNNNNNNGTGTAGATCTCGGTGGTCGCCGTATCATT" >>Tr
 #  (3) clipping reads once the quality score drops below Q20 in any 4bp window
 #  and (4) removing any read that is less than 33 bp after these filters have
 #  been applied.  More importantly, Trimmomatic is "pair aware" and when a read
-#  from R1 is culled (placed in the UNPaired file) the R2 is as well.
+#  from R1 is culled (placed in the UNPaired file) the R2 is as well. [10 min]
 
 java -jar $TRIM_BIN/trimmomatic-0.33.jar \
         PE \
@@ -158,6 +158,22 @@ java -jar $TRIM_BIN/trimmomatic-0.33.jar \
         TRAILING:20 \
         SLIDINGWINDOW:4:20 \
         MINLEN:33
-        
+       
+#After filtering, this is a good time to look at the data.  Use "less" to scroll
+#  through the data.  Notice that read lengths and file sizes vary, but the 
+#  number of sequences per group matches
+
+#Take this opportunity to re-run FastQC and look at the differences in the .html
+#  output.
+
+fastqc                          \
+        --outdir .              \
+        --threads 10            \
+        "$BAT_R1"_filterPaired.fq \
+        "$BAT_R1"_filterUNPaired.fq \
+        "$BAT_R2"_filterPaired.fq \
+        "$BAT_R2"_filterUNPaired.fq
+
+
 
 
