@@ -5,7 +5,7 @@
 # v 0.1
 
 
-#tmp variables
+#tmp variables !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 FASTX_DIR=/lustre/work/apps/fastx_toolkit-0.0.14/bin/
 
 
@@ -74,7 +74,7 @@ wc -l *.fq | awk '{print $1/4000000"\t"$2}'
 ################################################################################
 ################################################################################
 ##                                                                            ##
-##         Quality control via FastQC and FastX                               ##
+##         Quality control via FastQC and Trimmomatic                         ##
 ##                                                                            ##
 ################################################################################
 ################################################################################
@@ -89,8 +89,9 @@ wc -l *.fq | awk '{print $1/4000000"\t"$2}'
 
 #Pick a sample that you will use for processing.  Designate the R1 and R2 reads
 #  here.  Do not include a file extension (ex. .fq)
-BAT_R1=braCav_17_R1
-BAT_R2=braCav_17_R2
+BAT=braCav_17
+BAT_R1=$BAT"_R1"
+BAT_R2=$BAT"_R2"
 
 #create the directory and set a variable
 SEQ_DIR="$RESULTS_DIR/seqQC"
@@ -166,14 +167,75 @@ java -jar $TRIM_BIN/trimmomatic-0.33.jar \
 #Take this opportunity to re-run FastQC and look at the differences in the .html
 #  output.
 
-fastqc                          \
-        --outdir .              \
-        --threads 10            \
+fastqc \
+        --outdir . \
+        --threads 10 \
+        "$BAT_R1"_filterPaired.fq \
+        "$BAT_R1"_filterUNPaired.fq \
+        "$BAT_R2"_filterPaired.fq \
+        "$BAT_R2"_filterUNPaired.fq
+
+#Is there anything we can do to increase the quality of the sequences?  Look
+#  through the Trimmomatic manual and and FastQC results.  Can we re-run
+#  Trimmomatic to improve our overall quality?
+
+#
+java -jar $TRIM_BIN/trimmomatic-0.33.jar \
+        PE \
+        -threads 10 \
+        -phred64 \
+        $DATA_DIR/$BAT_R1.fq \
+        $DATA_DIR/$BAT_R2.fq \
+        "$BAT_R1"_filterPaired.fq \
+        "$BAT_R1"_filterUNPaired.fq \
+        "$BAT_R2"_filterPaired.fq \
+        "$BAT_R2"_filterUNPaired.fq \
+        ILLUMINACLIP:TruSeq4-PE.fa:2:30:10 \
+        LEADING:20 \
+        TRAILING:20 \
+        SLIDINGWINDOW:4:20 \
+        MINLEN:33 \
+        HEADCROP:6
+
+#Lets go ahead and combine our unpaired reads into a singletons file
+cat "$BAT_R1"_filterUNPaired.fq "$BAT_R2"_filterUNPaired.fq >$BAT"_RX_UNpaired.fq"
+
+fastqc \
+        --outdir . \
+        --threads 10 \
         "$BAT_R1"_filterPaired.fq \
         "$BAT_R1"_filterUNPaired.fq \
         "$BAT_R2"_filterPaired.fq \
         "$BAT_R2"_filterUNPaired.fq
 
 
+################################################################################
+################################################################################
+####                                                                        ####
+####       Quality control via FastQC and Trimmomatic                       ####
+####                                                                        ####
+################################################################################
+################################################################################
+#Now for the heavy lifting.  We are going to use our quality filtered data along
+#  with a Trinity (http://trinityrnaseq.github.io/) to assemble our data into 
+#  contigs.  Since we are not using a refernece genome, these are "de novo" 
+#  assemblies.  There is no magic bullet when it comes to assembly.  While the 
+#  parameters used here are "good enough" a significant amount optimization could
+#  occur here.  
 
+#Lets organize our assemblies into a seperate directory (in Results)
+ASSEMBLY_DIR="$RESULTS_DIR/assemblies"
+mkdir $ASSEMBLY_DIR
+cd $ASSEMBLY_DIR
+
+#start the De Novo Assembly
+ /lustre/work/apps/trinityrnaseq_r20140717/Trinity \
+        --seqType fq \
+        --JM 15G \
+        --left  $SEQ_DIR/$BAT_R1"_filterPaired.fq" \
+        --right $SEQ_DIR/$BAT_R2"_filterPaired.fq" \
+        --single $SEQ_DIR/$BAT"_RX_UNpaired.fq" \
+        --CPU 10 \
+        --output "$ASSEMBLY_DIR/$BAT" \
+        --full_cleanup 
 
