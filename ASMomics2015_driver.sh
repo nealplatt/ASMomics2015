@@ -115,111 +115,49 @@ cp $BAT_R2*.fastq.html ~/Dropbox
 #  series of steps using the FastX toolkit.  There is more than one way to
 #  skin a cat...this is my preferred way.
 
+#First lets get the Trimmomatic binary (ths is sent to your bin directory
+wget \
+        --directory-prefix=$BIN_DIR \
+        http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/Trimmomatic-0.33.zip
 
-#Here we clip adapters and remove reads with Q20 over half the read...for R1
-ADAPTER_SEQ=AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC
+#uncompress the file
+unzip $BIN_DIR/Trimmomatic-0.33.zip
 
-$FASTX_DIR/fastx_clipper                                \
-        -n                                              \
-        -a $ADAPTER_SEQ                                 \
-        -i $DATA_DIR/$BAT_R1.fq                         \
-        | $FASTX_DIR/fastq_quality_filter               \
-                -Q33                                    \
-                -q 20                                   \
-                -p 50                                   \
-                -o $SEQ_DIR/$BAT_R1"_filtered.fq"  
-
-#Here we clip adapters and remove reads with Q20 over half the read...for R1
-$FASTX_DIR/fastx_clipper                                \
-        -n                                              \
-        -a $ADAPTER_SEQ                                 \
-        -i $DATA_DIR/$BAT_R2.fq                         \
-        | $FASTX_DIR/fastq_quality_filter               \
-                -Q33                                    \
-                -q 20                                   \
-                -p 50                                   \
-                -o $SEQ_DIR/$BAT_R2"_filtered.fq"  
+#and set a variable for the path
+TRIM_BIN=$BIN_DIR/Trimmomatic-0.33
 
 
+#First get the adapter sequeancs into a file for Trimmomatic file
+echo ">i7">TruSeq4-PE.fa
+echo "GATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG">>TruSeq4-PE.fa
+echo ">i5">>TruSeq4-PE.fa
+echo "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTNNNNNNGTGTAGATCTCGGTGGTCGCCGTATCATT" >>TruSeq4-PE.fa
 
+#Now we can run Trimmomatic.  This is a fairly complicated filtering protocol
+#  and I would suggest reading the manual to have a better understanding.
+#  http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/TrimmomaticManual_V0.32.pdf
+#  In short, we are removing poritons of reads that match to the sequencing
+#  adapter, (2) removing reads below Q20 at the beginning and end of the reads
+#  (3) clipping reads once the quality score drops below Q20 in any 4bp window
+#  and (4) removing any read that is less than 33 bp after these filters have
+#  been applied.  More importantly, Trimmomatic is "pair aware" and when a read
+#  from R1 is culled (placed in the UNPaired file) the R2 is as well.
 
-#Adapters TruSeq Universal Adapter:
-#  i7:GATCGGAAGAGCACACGTCTGAACTCCAGTCAC*ATCTCGTATGCCGTCTTCTGCTTG
-#  i5:AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT*GTGTAGATCTCGGTGGTCGCCGTATCATT
+java -jar $TRIM_BIN/trimmomatic-0.33.jar \
+        PE \
+        -threads 10 \
+        -phred64 \
+        $DATA_DIR/$BAT_R1.fq \
+        $DATA_DIR/$BAT_R2.fq \
+        "$BAT_R1"_filterPaired.fq \
+        "$BAT_R1"_filterUNPaired.fq \
+        "$BAT_R2"_filterPaired.fq \
+        "$BAT_R2"_filterUNPaired.fq \
+        ILLUMINACLIP:TruSeq4-PE.fa:2:30:10 \
+        LEADING:20 \
+        TRAILING:20 \
+        SLIDINGWINDOW:4:20 \
+        MINLEN:33
+        
 
-
-
-
-
-
-
-#assemble mito genomes using de novo
-NAME[0]=Index_Bat_9
-NAME[1]=Index_Bat_10
-NAME[2]=Index_Bat_11
-NAME[3]=Index_Bat_12
-NAME[4]=Index_Bat_13
-NAME[5]=Index_Bat_14
-NAME[6]=Index_Bat_15
-NAME[7]=Index_Bat_16
-NAME[8]=Index_Bat_18
-NAME[9]=Index_Bat_19
-NAME[10]=Index_Bat_21
-NAME[11]=Index_Bat_28
-
-for (( i = 0; i < ${#NAME[@]}; i++))
-do
-    /lustre/work/apps/trinityrnaseq_r20140717/Trinity \
-        --seqType fa \
-        --JM 30G \
-        --left  /lustre/scratch/roplatt/asm/mitoGenomes/data/${NAME[$i]}_1.fq \
-        --right /lustre/scratch/roplatt/asm/mitoGenomes/data/${NAME[$i]}_2.fq \
-        --CPU 20 \
-        --output "/lustre/scratch/roplatt/asm/mitoGenomes/results/${NAME[$i]}.trinity" \
-        --full_cleanup 
-done
-
-
-
-NAME[0]=Index_Bat_9
-NAME[1]=Index_Bat_21
-NAME[2]=Index_Bat_28
-NAME[3]=Index_Bat_12
-NAME[4]=Index_Bat_13
-NAME[5]=Index_Bat_14
-NAME[6]=Index_Bat_15
-NAME[7]=Index_Bat_16
-NAME[8]=Index_Bat_18
-NAME[9]=Index_Bat_19
-NAME[10]=Index_Bat_10
-NAME[11]=Index_Bat_11
-
-for (( i = 0; i < ${#NAME[@]}; i++))
-do
-/lustre/work/apps/trinityrnaseq_r20140717/Trinity \
-        --seqType fq \
-        --JM 20G \
-        --left "/lustre/scratch/roplatt/asm/mitoGenomes/data/"${NAME[$i]}"_1.fq" \
-        --right "/lustre/scratch/roplatt/asm/mitoGenomes/data/"${NAME[$i]}"_2.fq" \
-        --CPU 20 \
-        --output ${NAME[$i]}
-done
-
-
-
-cat bat10_1.fa bat10_2.fa >bat10_X.fa
-
- /lustre/work/apps/blast/bin/makeblastdb -in bat10_mtGenome.fa -dbtype nucl
-
-
- /lustre/work/apps/blast/bin/blastn -query bat10_X.fa -db bat10_mtGenome.fa -out bat10_blastn.out -outfmt 6 -evalue 1e-3
-
-
- time /lustre/work/apps/trinityrnaseq_r20140717/Trinity \
-	--seqType fq \
-	--JM 20G \
-	--left /lustre/scratch/roplatt/asm/mitoGenomes/data/Index_Bat_11_1.fq \
-	--right /lustre/scratch/roplatt/asm/mitoGenomes/data/Index_Bat_11_2.fq \
-	--CPU 20 \
-	--output bat11
 
