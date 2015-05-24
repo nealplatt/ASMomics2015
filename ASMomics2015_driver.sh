@@ -212,7 +212,7 @@ fastqc \
 ################################################################################
 ################################################################################
 ####                                                                        ####
-####       Quality control via FastQC and Trimmomatic                       ####
+####                De Novo Asembly w/ Trinity                              ####
 ####                                                                        ####
 ################################################################################
 ################################################################################
@@ -238,4 +238,34 @@ cd $ASSEMBLY_DIR
         --CPU 10 \
         --output "$ASSEMBLY_DIR/$BAT" \
         --full_cleanup 
+
+#assemble mito genomes using de novo
+NAME[0]=Index_Bat_9
+NAME[1]=Index_Bat_10
+NAME[2]=Index_Bat_11
+NAME[3]=Index_Bat_12
+NAME[4]=Index_Bat_13
+NAME[5]=Index_Bat_14
+NAME[6]=Index_Bat_15
+NAME[7]=Index_Bat_16
+NAME[8]=Index_Bat_18
+NAME[9]=Index_Bat_19
+NAME[10]=Index_Bat_21
+NAME[11]=Index_Bat_28
+
+for (( i = 0; i < ${#NAME[@]}; i++))
+do
+    /lustre/work/apps/trinityrnaseq_r20140717/Trinity \
+        --seqType fa \
+        --JM 30G \
+        --left  /lustre/scratch/roplatt/asm/mitoGenomes/data/${NAME[$i]}_1.fq \
+        --right /lustre/scratch/roplatt/asm/mitoGenomes/data/${NAME[$i]}_2.fq \
+        --CPU 20 \
+        --output "/lustre/scratch/roplatt/asm/mitoGenomes/results/${NAME[$i]}.trinity" \
+        --full_cleanup 
+done
+
+#on average these assemblies take ~an hour to complete.
+
+
 
