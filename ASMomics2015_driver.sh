@@ -89,7 +89,7 @@ wc -l *.fq | awk '{print $1/4000000"\t"$2}'
 
 #Pick a sample that you will use for processing.  Designate the R1 and R2 reads
 #  here.  Do not include a file extension (ex. .fq)
-BAT=braCav_17
+BAT=eptFur_21
 BAT_R1=$BAT"_R1"
 BAT_R2=$BAT"_R2"
 
@@ -281,3 +281,110 @@ makeblastdb -in $MITOGENOMES -dbtype nucl
     -outfmt 6 \
     -num_threads 8
  
+#So check out the length distributions of your blast hits.  Use the field info
+#  below.  
+
+# 1 Query
+# 2 Target
+# 3 Percent identity
+# 4 Alginment length
+# 5 Number of mismatches
+# 6 Number of gaps
+# 7 Query start position
+# 8 Query end position
+# 9 Subject start position
+# 10 Subject end position
+# 11 Evalue
+# 12 Bit score
+
+#Since the file is pretty small browse through it using "less" to find the
+#  assemble contig that is the best hits to the mitogenome.  (There are 
+#  other/better ways to do this: see below).
+
+less eptFur_21_vsChiropterMitoGenomes.blastn.out
+
+#Instead of using "less" you can use unix to "sort" the file based on specific
+#  columns.
+sort -n eptFur_21_vsChiropterMitoGenomes.blastn.out -nr -k12 | head
+
+#Find the assembled contig with the longest/best hit to the mitogenomes and
+#  extract it.  This can be done manually or with Samtools.
+samtools \
+    faidx \
+    ../assemblies/eptFur_21.Trinity.fasta \
+    c4321_g3_i1 \
+    >eptFur_21_mitoGenome.fas
+
+#now some of the mitogenomes will vary in quality. Lets look at sequence coverage.
+bowtie2-build eptFur_21_mitoGenome.fas eptFur_21_mitoGenome.fas 
+
+
+bowtie2 \
+    -x eptFur_21_mitoGenome.fas \
+    -1 $SEQ_DIR/$BAT_R1"_filterPaired.fq" \
+    -2 $SEQ_DIR/$BAT_R2"_filterPaired.fq" \
+    -U $SEQ_DIR/$BAT"_RX_UNpaired.fq" \
+    -S eptFur_21_rawMapped.SAM
+
+#Convert the SAM file to BAM
+samtools view \
+    -Sb eptFur_21_rawMapped.SAM \
+    | samtools sort \
+        -f \
+        - \
+        eptFur_21_rawMapped_sorted.BAM
+ 
+
+#but since nothing is easy we have to create a "special" genome file.  Check out
+#  the bedtools to see the file type.  Welcome to bioinformatics.
+/lustre/work/apps/fastx_toolkit-0.0.14/bin/fasta_formatter \
+    -i eptFur_21_mitoGenome.fas \
+    -t \
+    | awk '{print $1"\t1\t"length($2)}' \
+     >eptFur_21_mitoGenome.tab
+
+#convert BAM to BED
+ bedtools bamtobed \
+    -i eptFur_21_rawMapped_sorted.BAM \
+    >eptFur_21_rawMapped_sorted.BED 
+
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
