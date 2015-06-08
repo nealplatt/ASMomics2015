@@ -28,12 +28,12 @@ mkdir $HOME_DIR $DATA_DIR $RESULTS_DIR $BIN_DIR
 #Now we will move into the data directory to begin processing
 cd $DATA_DIR
 
-#First we need to download the data from an FTP site.
-wget <address>..batUCE_batch1_2015-01.tgz
+#First we need to download the data from a dropbox account.
+wget https://www.dropbox.com/s/jro04i53dwvjoto/myoViv_NK5109.tgz?dl=0
 
 #To save space and increase transfer speeds, the sequence data is compressed and
 #  archived.  Expand the data into a useable format.
-tar -xvzf batUCE_batch1_2015-01.tgz
+tar -xvzf myoViv_NK5109.tgz
 
 #Lets take an opportunity to look at the data...
 #First, lets look at the all the files, their sizes, and permissions
@@ -53,7 +53,7 @@ ls -lh *
 #  file sizes make more sense (G = gigabytes, M = megabytes, K = kilobytes).
 
 #Now lets look at the actual data...
-head braCav_17_R1.fq
+head myoViv_NK5109_R*.fq
 
 # description of fastq slides here !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -89,7 +89,7 @@ wc -l *.fq | awk '{print $1/4000000"\t"$2}'
 
 #Pick a sample that you will use for processing.  Designate the R1 and R2 reads
 #  here.  Do not include a file extension (ex. .fq)
-BAT=eptFur_21
+BAT=chrAur_19_all
 BAT_R1=$BAT"_R1"
 BAT_R2=$BAT"_R2"
 
@@ -145,20 +145,20 @@ echo "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTNNNNNNGTGTAGATCTCGGTGGTCGCCGTATCATT" >>Tr
 #  from R1 is culled (placed in the UNPaired file) the R2 is as well. [10 min]
 
 java -jar $TRIM_BIN/trimmomatic-0.33.jar \
-        PE \
-        -threads 10 \
-        -phred64 \
-        $DATA_DIR/$BAT_R1.fq \
-        $DATA_DIR/$BAT_R2.fq \
-        "$BAT_R1"_filterPaired.fq \
-        "$BAT_R1"_filterUNPaired.fq \
-        "$BAT_R2"_filterPaired.fq \
-        "$BAT_R2"_filterUNPaired.fq \
-        ILLUMINACLIP:TruSeq4-PE.fa:2:30:10 \
-        LEADING:20 \
-        TRAILING:20 \
-        SLIDINGWINDOW:4:20 \
-        MINLEN:33
+    PE \
+    -threads 10 \
+    -phred64 \
+    $DATA_DIR/$BAT_R1.fq \
+    $DATA_DIR/$BAT_R2.fq \
+    "$BAT_R1"_filterPaired.fq \
+    "$BAT_R1"_filterUNPaired.fq \
+    "$BAT_R2"_filterPaired.fq \
+    "$BAT_R2"_filterUNPaired.fq \
+    ILLUMINACLIP:TruSeq4-PE.fa:2:30:10 \
+    LEADING:20 \
+    TRAILING:20 \
+    SLIDINGWINDOW:4:20 \
+    MINLEN:33
        
 #After filtering, this is a good time to look at the data.  Use "less" to scroll
 #  through the data.  Notice that read lengths and file sizes vary, but the 
@@ -259,6 +259,8 @@ cd $ASSEMBLY_DIR
 #Go to NCBI and download several of the bat mitochondrial genomes.  Upload
 #  them to your EC2 instance for a local blast.
 
+ASSEMBLED_SEQS=$ASSEMBLY_DIR/$BAT.Trinity.fasta
+
 ANNOTATION_DIR="$RESULTS_DIR/annotations"
 mkdir $ANNOTATION_DIR
 cd $ANNOTATION_DIR
@@ -276,8 +278,8 @@ makeblastdb -in $MITOGENOMES -dbtype nucl
 #  assembly).
 /lustre/work/apps/blast/bin/blastn \
     -db $MITOGENOMES \
-    -query ../assemblies/eptFur_21.Trinity.fasta \
-    -out eptFur_21_vsChiropterMitoGenomes.blastn.out \
+    -query $ASSEMBLED_SEQS \
+    -out $ANNOTATION_DIR/$BAT"_assemVsMito_blastn.out" \
     -outfmt 6 \
     -num_threads 8
  
@@ -301,72 +303,85 @@ makeblastdb -in $MITOGENOMES -dbtype nucl
 #  assemble contig that is the best hits to the mitogenome.  (There are 
 #  other/better ways to do this: see below).
 
-less eptFur_21_vsChiropterMitoGenomes.blastn.out
+less $ANNOTATION_DIR/$BAT"_assemVsMito_blastn.out"
 
 #Instead of using "less" you can use unix to "sort" the file based on specific
 #  columns.
-sort -n eptFur_21_vsChiropterMitoGenomes.blastn.out -nr -k12 | head
+sort -n $ANNOTATION_DIR/$BAT"_assemVsMito_blastn.out" -nr -k12 | head
 
 #Find the assembled contig with the longest/best hit to the mitogenomes and
 #  extract it.  This can be done manually or with Samtools.
+#  Which of the sequences is the best hit to the FULL mitoGenome.  
+
+MITO_CONTIG=c18456_g2_i1
+
+#Now extract it into it's own seperate file.
 samtools \
     faidx \
-    ../assemblies/eptFur_21.Trinity.fasta \
-    c4321_g3_i1 \
-    >eptFur_21_mitoGenome.fas
+    $ASSEMBLED_SEQS \
+    $MITO_CONTIG \
+    >$BAT"_mitoGenome.fas"
+
 
 #now some of the mitogenomes will vary in quality. Lets look at sequence coverage.
-bowtie2-build eptFur_21_mitoGenome.fas eptFur_21_mitoGenome.fas 
+#  First we need to map all of our reads back to the mitochondrial contig
+bowtie2-build $BAT"_mitoGenome.fas" $BAT"_mitoGenome.fas"
 
-
+#Now lets map our cleaned data sequnce data to the miotchondrial contig.
 bowtie2 \
-    -x eptFur_21_mitoGenome.fas \
+    -x $BAT"_mitoGenome.fas" \
     -1 $SEQ_DIR/$BAT_R1"_filterPaired.fq" \
     -2 $SEQ_DIR/$BAT_R2"_filterPaired.fq" \
     -U $SEQ_DIR/$BAT"_RX_UNpaired.fq" \
-    -S eptFur_21_rawMapped.SAM
+    -S $BAT"_mitoGenome.SAM"
+
+
+bowtie2 \
+    -x $BAT"_mitoGenome.fas" \
+    -1 ../../data/chrAur19_reads_1.fq  \
+    -2 ../../data/chrAur19_reads_2.fq  \
+    -S $BAT"_mitoGenome.SAM"
 
 #Convert the SAM file to BAM
 samtools view \
-    -Sb eptFur_21_rawMapped.SAM \
+    -Sb $BAT"_mitoGenome.SAM" \
     | samtools sort \
         -f \
         - \
-        eptFur_21_rawMapped_sorted.BAM
+        $BAT"_rawMapped_sorted.BAM"
  
 
 #but since nothing is easy we have to create a "special" genome file.  Check out
 #  the bedtools to see the file type.  Welcome to bioinformatics.
 /lustre/work/apps/fastx_toolkit-0.0.14/bin/fasta_formatter \
-    -i eptFur_21_mitoGenome.fas \
+    -i $BAT"_mitoGenome.fas" \
     -t \
-    | awk '{print $1"\t1\t"length($2)}' \
-     >eptFur_21_mitoGenome.tab
+    | awk '{print $1"\t"length($2)}' \
+     >$BAT"_mitoGenome.tab"
 
 #convert BAM to BED
  bedtools bamtobed \
-    -i eptFur_21_rawMapped_sorted.BAM \
-    >eptFur_21_rawMapped_sorted.BED 
+    -i $BAT"_rawMapped_sorted.BAM" \
+    >$BAT"_rawMapped_sorted.BED" 
 
  
  
 
 
+#caclulate coverage
+bedtools genomecov \
+    -i $BAT"_rawMapped_sorted.BED" \
+    -g $BAT"_mitoGenome.tab" \
+    -d
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+#this is cool and all but we want coverage over then entire mitogenome rather
+#  than at each base.  We can use AWK to avg out everthing.
+bedtools genomecov \
+    -i $BAT"_rawMapped_sorted.BED" \
+    -g $BAT"_mitoGenome.tab" \
+    -d \
+    | awk '{sum += $3; n++ } END {print sum / n;}' 
 
 
 
