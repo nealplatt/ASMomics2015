@@ -29,7 +29,7 @@ mkdir $HOME_DIR $DATA_DIR $RESULTS_DIR $BIN_DIR
 cd $DATA_DIR
 
 #First we need to download the data from a dropbox account.
-wget https://www.dropbox.com/s/jro04i53dwvjoto/myoViv_NK5109.tgz?dl=0
+wget https://www.dropbox.com/s/uhoi3y0xzvczobi/batUCE_batch1_2015-02.tgz?dl=0
 
 #To save space and increase transfer speeds, the sequence data is compressed and
 #  archived.  Expand the data into a useable format.
