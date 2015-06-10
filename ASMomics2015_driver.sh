@@ -12,22 +12,26 @@
 #Here we are setting variable names for major directories.  This will streamline
 #  downstreal processing and reduce the chance for errors.  It is easier to get 
 #  it right once rather than a few dozen times.  
-HOME_DIR="/lustre/scratch/roplatt/asm/mitogenomes2" #<- ENTER THE NAME OF YOUR HOME DIR HERE
+HOME_DIR="/data/ASMomics2015" #<- ENTER THE NAME OF YOUR HOME DIR HERE
 DATA_DIR="$HOME_DIR/data"
 RESULTS_DIR="$HOME_DIR/results"
 BIN_DIR="$HOME_DIR/bin"
 
-mkdir $HOME_DIR $DATA_DIR $RESULTS_DIR $BIN_DIR
+mkdir $DATA_DIR $RESULTS_DIR $BIN_DIR
 
+#Lets set the number of available processors for consistent use in downstream
+#  analyses.
+PROCS=$(nproc)
 
 #Now we will move into the data directory to begin processing
 cd $DATA_DIR
 
 #First we need to download the data from my dropbox account.
-# md5 9777964159fd52914d4541f49a4618d3
+# md5 9d3120b7e2a532d448b276e055eaafe2
 wget -O batUCE_batch1_2015-02.tgz \
     https://www.dropbox.com/s/uhoi3y0xzvczobi/batUCE_batch1_2015-02.tgz?dl=0
-
+#as a back up.  You can also get the data here:
+# wget ftp://crocgenomes.org/pub/ASM/batUCE_batch1_2015-02.tgz
 
 #To save space and increase transfer speeds, the sequence data is compressed and
 #  archived.  Expand the data into a useable format.
@@ -53,15 +57,15 @@ ls -lh *
 #Now lets look at the actual data...
 head traCir_R*.fq
 
-# description of fastq slides here !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 #We know our files are large, and they are in the FastQ format, but how big are
 #  they
 wc *.fq
 #This gives us the TOTAL number of lines, words, characters, and the filename.
 #  but we know that the .FQ format has 4 lines per entry.  Lets get a better idea
 
-wc -l *.fq | awk '{print $1/4"\t"$2}'       #<- first use of the pipe , explain !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+wc -l *.fq | awk '{print $1/4"\t"$2}'       
+#This is the first use of the "|" (pipe).  This is a very valuable tool and
+#  allows us to direct output from one progmram/command as input into another.
 
 #or by millions
 wc -l *.fq | awk '{print $1/4000000"\t"$2}' 
@@ -98,10 +102,10 @@ SEQ_DIR="$RESULTS_DIR/seqQC"
 mkdir $SEQ_DIR
 cd $SEQ_DIR
 
-fastqc                          \
-        --outdir .              \
-        --threads 10            \
-        $DATA_DIR/$BAT_R1.fq    \
+fastqc \
+        --outdir . \
+        --threads $PROCS \
+        $DATA_DIR/$BAT_R1.fq \
         $DATA_DIR/$BAT_R2.fq
 #Open the FastQC .html output on your local computer.  This can be done by 
 #  transfering the file through FileZilla or copying it to DropBox 
@@ -113,17 +117,19 @@ fastqc                          \
 #  series of steps using the FastX toolkit.  There is more than one way to
 #  skin a cat...this is my preferred way.
 
-#First lets get the Trimmomatic binary (ths is sent to your bin directory
-wget \
-        --directory-prefix=$BIN_DIR \
-        http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/Trimmomatic-0.33.zip
+#First lets get the Trimmomatic binary. Since this is a program, lets put it in
+#  the /bin directory
+cd $BIN_DIR
+wget http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/Trimmomatic-0.33.zip
 
 #uncompress the file
-unzip $BIN_DIR/Trimmomatic-0.33.zip
+unzip Trimmomatic-0.33.zip
 
 #and set a variable for the path
 TRIM_BIN=$BIN_DIR/Trimmomatic-0.33
 
+#Now lets go back to our SEQ_DIR
+cd $SEQ_DIR
 
 #First get the adapter sequeancs into a file for Trimmomatic file
 echo ">i7">TruSeq4-PE.fa
@@ -143,7 +149,7 @@ echo "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTNNNNNNGTGTAGATCTCGGTGGTCGCCGTATCATT" >>Tr
 
 java -jar $TRIM_BIN/trimmomatic-0.33.jar \
     PE \
-    -threads 10 \
+    -threads $PROCS \
     -phred64 \
     $DATA_DIR/$BAT_R1.fq \
     $DATA_DIR/$BAT_R2.fq \
@@ -163,10 +169,9 @@ java -jar $TRIM_BIN/trimmomatic-0.33.jar \
 
 #Take this opportunity to re-run FastQC and look at the differences in the .html
 #  output.
-
 fastqc \
         --outdir . \
-        --threads 10 \
+        --threads $PROCS \
         "$BAT_R1"_filterPaired.fq \
         "$BAT_R1"_filterUNPaired.fq \
         "$BAT_R2"_filterPaired.fq \
@@ -177,7 +182,7 @@ fastqc \
 #  Trimmomatic to improve our overall quality?
 java -jar $TRIM_BIN/trimmomatic-0.33.jar \
         PE \
-        -threads 10 \
+        -threads $PROCS \
         -phred64 \
         $DATA_DIR/$BAT_R1.fq \
         $DATA_DIR/$BAT_R2.fq \
@@ -199,9 +204,8 @@ fastqc \
         --outdir . \
         --threads 10 \
         "$BAT_R1"_filterPaired.fq \
-        "$BAT_R1"_filterUNPaired.fq \
         "$BAT_R2"_filterPaired.fq \
-        "$BAT_R2"_filterUNPaired.fq
+        $BAT"_RX_UNpaired.fq"
 
 
 ################################################################################
@@ -223,15 +227,38 @@ ASSEMBLY_DIR="$RESULTS_DIR/assemblies"
 mkdir $ASSEMBLY_DIR
 cd $ASSEMBLY_DIR
 
+
+#But oh crap.  We need to install trinity.  Again, this is a program.  It belongs
+#  in the /bin folder
+cd $BIN_DIR
+
+#Now dowload and uncompress the source code.
+wget https://github.com/trinityrnaseq/trinityrnaseq/archive/v2.0.6.tar.gz
+tar -xvzf v2.0.6.tar.gz
+
+#and move on to compiling trinity
+cd trinityrnaseq-2.0.6
+
+#take a deep breath
+make
+#a bunch of stuff will flash across the screen and it is going to be very scary...
+
+#So.  Great.  Now Trinity is installed.  Lets add it to our $PATH so that we can
+#  call it directly from any subdirectory.
+export PATH=$PATH:$(pwd)
+
+#Ok.  Now we can get back to our assembly directory and start working
+cd $ASSEMBLY_DIR
+
 #start the De Novo Assembly
- /lustre/work/apps/trinityrnaseq_r20140717/Trinity \
+Trinity \
         --seqType fq \
-        --JM 15G \
+        --max_memory 20G \
         --left  $SEQ_DIR/$BAT_R1"_filterPaired.fq" \
         --right $SEQ_DIR/$BAT_R2"_filterPaired.fq" \
         --single $SEQ_DIR/$BAT"_RX_UNpaired.fq" \
-        --CPU 10 \
-        --output "$ASSEMBLY_DIR/$BAT" \
+        --CPU $PROCS \
+        --output $ASSEMBLY_DIR/$BAT"_trinity" \
         --full_cleanup 
 
 #on average these assemblies take ~an hour to complete.
