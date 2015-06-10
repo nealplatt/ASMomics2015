@@ -400,7 +400,8 @@ bedtools genomecov \
 #You can donwnload the data from the previous steps here:
 
 #Quick note:  I will remove this link ~9/1/2015, so be aware.
-
+wget -O SRR1712667_10M.tgz \
+    https://www.dropbox.com/s/4vkpk3bbcv6rk6m/SRR1712667_10M.tgz?dl=0
 
 # Uncompress it.
 tar -xvzf SRR1712667_10M.tgz
