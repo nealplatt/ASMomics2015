@@ -381,20 +381,34 @@ bedtools genomecov \
 #  interested, here some example syntax to get you started with the white tiger
 #  mitogenome.
 
+#Download the data from the SRA.  This will take forever, so dont try and do this
+#  today.  Skip this step.
 # wget 
 
+#Data stored on the SRA is saved in a special format (again with the formats).
+#  It needs to be converted from .sra to .fastq.  This will generate two HUGE
+#  files (>110 Gb).  This is overkill for what we want to do and beyond our 
+#  capabilites for the day.  Skip.
 # fastq-dump --split-files SRR1712667.sra
 
+#Since we only need a very small portion of all the DNA reads to get resonable
+#  coverage of the mitogenome, lets subsamle only 10M reads from the R1 and R2
+#  ends of the fragment.  Again, for today...skip.
 # head -40000000 SRR1712667_1.fastq >SRR1712667_10M_1.fastq &
 # head -40000000 SRR1712667_2.fastq >SRR1712667_10M_2.fastq &
 
-#This data has been compressed and is available here: 
+#You can donwnload the data from the previous steps here:
+
+#Quick note:  I will remove this link ~9/1/2015, so be aware.
 
 
+# Uncompress it.
 tar -xvzf SRR1712667_10M.tgz
 
-#FYI the read information is here: http://www.ncbi.nlm.nih.gov/sra/SRR1712667/
-#  For assembly use an insert size of 400 bp.
+#Now you can use this data, and the by making slight modifications to the script
+#  given above, you could assemble the mitogenome from the tiger.  All the
+#  the relevant assembly information can be found here: http://www.ncbi.nlm.nih.gov/sra/SRR1712667/
+#  Make sure to note that the fragments have an insert size of 400 bp.
 
 
 
