@@ -4,8 +4,20 @@
 # 10 June 2015
 # v 0.2
 
-#The first thing we nee to do is set up a directory structure.  There is no 
-#  hard and fast rule, but I try to stick with the Noble (2009) structure.
+#The first thing we need to do is make sure our Biolinux installation and all of
+#  the relevant programs are up-to-date.  
+apt-get update
+apt-get upgrade
+#These commands update all of the repositories, then upgrade any programs with
+#  recent releases.  This is very important. For example, we will be assembling
+#  with Trinity...which relies on Bowtie (v1), but the version included in the
+#  Biolinux AMI is Bowtie (v0).  Updating Bowtie (and everything else) now, will 
+#  make our lives MUCH easier.
+
+
+#Organizing the data for even small projects (like this one) is a challenge. 
+#  There is no hard and fast rule, for directory structure/organization, but I 
+#  try to stick with the Noble (2009) reccomendations.
 #  http://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1000424
 
 
@@ -261,10 +273,21 @@ Trinity \
         --output $ASSEMBLY_DIR/$BAT"_trinity" \
         --full_cleanup 
 
+#
+
 #on average these assemblies take ~an hour to complete.
 
-#lets use some preliminary tools to investigate the assembly.  For me, it is
-#  easier to analyze the data in
+
+################################################################################
+################################################################################
+####                                                                        ####
+####                 Exploring the Assembly                                 ####
+####                                                                        ####
+################################################################################
+################################################################################
+#lets use some preliminary tools to investigate the assembly. Our main goal is
+#  to find assembled mitochondrial genomes, and to calculate the amount of
+#  coverage we are getting.
 
 #there are several ways to find potential mitochondrial sequences in your data.
 #  Method 1a & 1b: Use NCBI Blast
