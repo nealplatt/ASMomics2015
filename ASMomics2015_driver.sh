@@ -489,7 +489,7 @@ bedtools genomecov \
 #Download the data from the SRA.  This will take forever, so dont try and do this
 #  today.  Skip this step.
 # cd $DATA_DIR
-# wget 
+# wget ftp://ftp-trace.ncbi.nih.gov/sra/sra-instant/reads/ByRun/sra/SRR/SRR171/SRR1712667/SRR1712667.sra
 
 #Data stored on the SRA is saved in a special format (again with the formats).
 #  It needs to be converted from .sra to .fastq.  This will generate two HUGE
@@ -515,8 +515,9 @@ tar -xvzf SRR1712667_10M.tgz
 
 #Now you can use this data, and the by making slight modifications to the script
 #  given above, you could assemble the mitogenome from the tiger.  All the
-#  the relevant assembly information can be found here: http://www.ncbi.nlm.nih.gov/sra/SRR1712667/
-#  Make sure to note that the fragments have an insert size of 400 bp.
+#  the relevant assembly information can be found here: 
+#  http://www.ncbi.nlm.nih.gov/sra/SRR1712667/.  Make sure to note that the 
+#  fragments have an insert size of 400 bp.
                     
 
                         #~~~~~~~~~~~~~~~~~~~~~#
