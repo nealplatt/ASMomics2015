@@ -118,19 +118,21 @@ wc -l *.fq | awk '{print $1/4000000"\t"$2}'
 #Pick a sample that you will use for processing.  Designate the R1 and R2 reads
 #  here.  Do not include a file extension (ex. .fq)
 
-#braCav = Brachyphylla cavernarum
-#chrAur = Chotopterus auritus
-#eptFur = Eptisicus furinalis
-#macCal = Macrotus califronicus
-#micMeg = Micronycteris megalotis
-#nycHum = Nycticeus humeralis
-#perSub = Perimyotis subflavus
-#phyDis = Phylostomus discolor
-#rhiAle = Rhinophylla alethina
-#tonSau = Tonatia saurophila
-#traCir = Trachops cirrhosus
-#uroBil = Uroderma bilobatum
+#Here are the species with data available.
+#  braCav = Brachyphylla cavernarum
+#  chrAur = Chotopterus auritus
+#  eptFur = Eptisicus furinalis
+#  macCal = Macrotus califronicus
+#  micMeg = Micronycteris megalotis
+#  nycHum = Nycticeus humeralis
+#  perSub = Perimyotis subflavus
+#  phyDis = Phylostomus discolor
+#  rhiAle = Rhinophylla alethina
+#  tonSau = Tonatia saurophila
+#  traCir = Trachops cirrhosus
+#  uroBil = Uroderma bilobatum
 
+#My initial analyses will use data from Trachops cirrhosus
 BAT=traCir                      #<---------------enter the bat abbreviation here
 BAT_R1=$BAT"_R1"
 BAT_R2=$BAT"_R2"
@@ -536,7 +538,7 @@ tar -xvzf SRR1712667_10M.tgz
                     
 
                         #~~~~~~~~~~~~~~~~~~~~~#
-                        #   TO BE CONTINUED   #
+                        #  TO BE CONTINUED... #
                         #~~~~~~~~~~~~~~~~~~~~~#
 
 
