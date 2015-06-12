@@ -1,18 +1,19 @@
 # ASMomics 2015
 # Mitogenome assembly in vespertilionid and phylostomid bats
 # RNPlatt
-# 10 June 2015
-# v 0.2
+# 12 June 2015
+# v 1.0
 
 ################################################################################
 ################################################################################
 ##                                                                            ##
-##                 PUTTING OUR HOUSE IN ORDER                                 ##
+##                      PUTTING OUR HOUSE IN ORDER                            ##
 ##                                                                            ##
 ################################################################################
 ################################################################################
 #The first thing we need to do is make sure our Biolinux installation and all of
 #  the relevant programs are up-to-date.  
+
 #These commands update all of the repositories, then upgrade any programs with
 #  recent releases.  This is very important. For example, we will be assembling
 #  with Trinity...which relies on Bowtie (v1), but the version included in the
@@ -116,6 +117,20 @@ wc -l *.fq | awk '{print $1/4000000"\t"$2}'
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #Pick a sample that you will use for processing.  Designate the R1 and R2 reads
 #  here.  Do not include a file extension (ex. .fq)
+
+#braCav = Brachyphylla cavernarum
+#chrAur = Chotopterus auritus
+#eptFur = Eptisicus furinalis
+#macCal = Macrotus califronicus
+#micMeg = Micronycteris megalotis
+#nycHum = Nycticeus humeralis
+#perSub = Perimyotis subflavus
+#phyDis = Phylostomus discolor
+#rhiAle = Rhinophylla alethina
+#tonSau = Tonatia saurophila
+#traCir = Trachops cirrhosus
+#uroBil = Uroderma bilobatum
+
 BAT=traCir                      #<---------------enter the bat abbreviation here
 BAT_R1=$BAT"_R1"
 BAT_R2=$BAT"_R2"
